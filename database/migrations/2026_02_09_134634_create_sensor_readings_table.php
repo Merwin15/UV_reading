@@ -10,7 +10,7 @@ return new class extends Migration
     {
         Schema::create('sensor_readings', function (Blueprint $table) {
             $table->id();
-            $table->float('water_level', 8, 2);
+            $table->float('uv_reading', 8, 2);
             $table->string('ip_address')->nullable();
             $table->timestamps();
         });

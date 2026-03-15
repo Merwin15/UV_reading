@@ -14,17 +14,17 @@ class SensorController extends Controller
     {
         try {
             $validated = $request->validate([
-                'water_level' => 'required|numeric|min:0|max:100'
+                'uv_reading' => 'required|numeric|min:0|max:100'
             ]);
 
             $reading = SensorReading::create([
-                'water_level' => $validated['water_level'],
+                'uv_reading' => $validated['uv_reading'],
                 'ip_address' => $request->ip()
             ]);
 
             Log::info('Sensor data saved to database', [
                 'id' => $reading->id,
-                'water_level' => $reading->water_level,
+                'uv_reading' => $reading->uv_reading,
                 'ip' => $reading->ip_address
             ]);
 
@@ -60,9 +60,9 @@ class SensorController extends Controller
     public function getDashboardData()
     {
         $latestReading = SensorReading::latest()->first();
-        $avgToday = SensorReading::whereDate('created_at', today())->avg('water_level');
+        $avgToday = SensorReading::whereDate('created_at', today())->avg('uv_reading');
         $totalReadings = SensorReading::count();
-        $criticalReadings = SensorReading::where('water_level', '<', 20)->count();
+        $criticalReadings = SensorReading::where('uv_reading', '<', 20)->count();
         
         // Get last 10 readings for chart
         $recentReadings = SensorReading::latest()
@@ -72,7 +72,7 @@ class SensorController extends Controller
             ->values();
 
         return response()->json([
-            'current_level' => $latestReading ? round($latestReading->water_level, 2) : 0,
+            'current_level' => $latestReading ? round($latestReading->uv_reading, 2) : 0,
             'avg_today' => round($avgToday ?? 0, 2),
             'total_readings' => $totalReadings,
             'critical_readings' => $criticalReadings,

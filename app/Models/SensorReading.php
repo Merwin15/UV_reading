@@ -11,7 +11,7 @@ class SensorReading extends Model
 
     // Fillable fields for mass assignment
     protected $fillable = [
-        'water_level',
+        'uv_reading',
         'ip_address',
     ];
 
@@ -20,15 +20,15 @@ class SensorReading extends Model
 
     // Cast attributes to specific types
     protected $casts = [
-        'water_level' => 'float',
+        'uv_reading' => 'float',
         'created_at' => 'datetime',
         'updated_at' => 'datetime',
     ];
 
-    // Optional: Accessor for formatted water level
-    public function getFormattedWaterLevelAttribute()
+    // Optional: Accessor for formatted UV reading
+    public function getFormattedUvReadingAttribute()
     {
-        return number_format($this->water_level, 2) . '%';
+        return number_format($this->uv_reading, 2) . '%';
     }
 
     // Optional: Scope for recent readings
@@ -40,6 +40,6 @@ class SensorReading extends Model
     // Optional: Scope for critical levels
     public function scopeCriticalLevel($query, $threshold = 20)
     {
-        return $query->where('water_level', '<=', $threshold);
+        return $query->where('uv_reading', '<=', $threshold);
     }
 }
