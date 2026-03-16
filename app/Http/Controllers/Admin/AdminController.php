@@ -10,25 +10,25 @@ class AdminController extends Controller
 {
     public function dashboard(Request $request)
     {
-        $readings = SensorReading::orderBy('created_at', 'desc')->get();
+        $readings = SensorReading::orderBy('created_at', 'desc')->paginate(20);
 
         // For chart: last 24 readings
         $history = SensorReading::orderBy('created_at', 'desc')->take(24)->get();
 
         // For stats
-        $current = $readings->first();
-        $avgToday = SensorReading::whereDate('created_at', now())->avg('uv_reading');
-        // Derive UV index (0–11+) from average reading
-        $avgUvIndex = $avgToday !== null ? round($avgToday / 9) : null;
-        $total = $readings->count();
-        $critical = $readings->where('uv_reading', '<', 20)->count();
+        $current      = $readings->first();
+        $avgTodayUv   = SensorReading::whereDate('created_at', now())->avg('uv_reading');
+        $avgTodayHeat = SensorReading::whereDate('created_at', now())->avg('heat_reading');
+        $avgUvIndex   = $avgTodayUv !== null ? round($avgTodayUv / 9) : null;
+
+        $total    = SensorReading::count();
+        $critical = SensorReading::criticalLevel()->count();
         $lastUpdate = $current ? $current->created_at->diffForHumans() : 'N/A';
 
-        // Categorized UV / heat levels
-        // Thresholds: <25 Safe, 25–60 Moderate, >60 Danger
-        $safeCount = SensorReading::where('uv_reading', '<', 25)->count();
-        $moderateCount = SensorReading::whereBetween('uv_reading', [25, 60])->count();
-        $dangerCount = SensorReading::where('uv_reading', '>', 60)->count();
+        // Categorized levels by UV index
+        $safeCount = SensorReading::where('uv_reading', '<', 3)->count();
+        $moderateCount = SensorReading::whereBetween('uv_reading', [3, 7])->count();
+        $dangerCount = SensorReading::where('uv_reading', '>=', 7)->count();
 
         // Live reading logic (1-hour delayed)
         $cutoff = now()->subHour();
@@ -38,13 +38,15 @@ class AdminController extends Controller
 
         $liveStatus = null;
         if ($liveReading) {
-            $value = $liveReading->uv_reading;
-            if ($value < 25) {
-                $liveStatus = 'Safe';
-            } elseif ($value <= 60) {
+            $uv   = $liveReading->uv_reading;
+            $heat = $liveReading->heat_reading;
+
+            if ($uv >= 7 || $heat >= 35) {
+                $liveStatus = 'Danger';
+            } elseif ($uv >= 3 || $heat >= 30) {
                 $liveStatus = 'Moderate';
             } else {
-                $liveStatus = 'Danger';
+                $liveStatus = 'Safe';
             }
         }
 
@@ -52,7 +54,8 @@ class AdminController extends Controller
             'readings'      => $readings,
             'history'       => $history,
             'current'       => $current,
-            'avgToday'      => $avgToday,
+            'avgToday'      => $avgTodayHeat, // your “Average Heat Today” card
+            'avgTodayUv'    => $avgTodayUv,
             'avgUvIndex'    => $avgUvIndex,
             'total'         => $total,
             'critical'      => $critical,

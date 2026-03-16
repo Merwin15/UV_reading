@@ -2,6 +2,8 @@
 
 use App\Http\Controllers\ProfileController;
 use Illuminate\Support\Facades\Route;
+use App\Exports\SensorReadingsExport;
+use Maatwebsite\Excel\Facades\Excel;
 
 // Public landing page
 Route::get('/', function () {
@@ -60,6 +62,15 @@ Route::middleware(['auth', 'role:admin'])->group(function () {
         '/admin/sensor-readings',
         [App\Http\Controllers\Admin\AdminController::class, 'clearSensorReadings']
     )->name('admin.sensor-readings.clear');
+
+    // Generate Excel report
+    Route::get(
+        '/admin/sensor-readings/report',
+        function () {
+            $filename = 'sensor_readings_' . now()->format('Y-m-d_H-i-s') . '.xlsx';
+            return Excel::download(new SensorReadingsExport, $filename);
+        }
+    )->name('admin.sensor-readings.report');
 });
 
 // Farmer routes

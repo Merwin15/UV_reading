@@ -6,40 +6,47 @@ use Illuminate\Database\Eloquent\Model;
 
 class SensorReading extends Model
 {
-    // Table name (optional if it follows Laravel convention)
     protected $table = 'sensor_readings';
 
-    // Fillable fields for mass assignment
     protected $fillable = [
         'uv_reading',
+        'heat_reading',
         'ip_address',
     ];
 
-    // Enable timestamps (created_at, updated_at)
     public $timestamps = true;
 
-    // Cast attributes to specific types
     protected $casts = [
-        'uv_reading' => 'float',
-        'created_at' => 'datetime',
-        'updated_at' => 'datetime',
+        'uv_reading'   => 'float',
+        'heat_reading' => 'float',
+        'created_at'   => 'datetime',
+        'updated_at'   => 'datetime',
     ];
 
-    // Optional: Accessor for formatted UV reading
-    public function getFormattedUvReadingAttribute()
+    public function getFormattedUvIndexAttribute()
     {
-        return number_format($this->uv_reading, 2) . '%';
+        return $this->uv_reading !== null
+            ? number_format($this->uv_reading, 1)
+            : null;
     }
 
-    // Optional: Scope for recent readings
+    public function getFormattedHeatAttribute()
+    {
+        return $this->heat_reading !== null
+            ? number_format($this->heat_reading, 1) . '°'
+            : null;
+    }
+
     public function scopeRecent($query, $minutes = 60)
     {
         return $query->where('created_at', '>=', now()->subMinutes($minutes));
     }
 
-    // Optional: Scope for critical levels
-    public function scopeCriticalLevel($query, $threshold = 20)
+    public function scopeCriticalLevel($query, $uvThreshold = 8, $heatThreshold = 35)
     {
-        return $query->where('uv_reading', '<=', $threshold);
+        return $query->where(function ($q) use ($uvThreshold, $heatThreshold) {
+            $q->where('uv_reading', '>=', $uvThreshold)
+              ->orWhere('heat_reading', '>=', $heatThreshold);
+        });
     }
 }
